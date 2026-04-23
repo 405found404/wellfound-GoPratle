@@ -94,5 +94,5 @@ jobs:
             --parameters 'commands=[
               "docker stop gp-prod || true",
               "docker rm gp-prod || true",
-              "docker run -d --name gp-prod -p 8:8080 ${{ env.GHCR_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}"
+              "docker run -d --name gp-prod -p 80:8080 ${{ env.GHCR_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}"
             ]'
