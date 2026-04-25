@@ -22,7 +22,8 @@ permissions:
 
 jobs:
   build-and-push:
-    
+   jobs:
+  build-and-push:
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.vars.outputs.sha_short }}
@@ -32,71 +33,68 @@ jobs:
 
       - name: Set outputs
         id: vars
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        run: |
+          if [ "${{ github.event.inputs.commit_sha }}" != "" ]; then
+            echo "sha_short=${{ github.event.inputs.commit_sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Login to GitHub Container Registry
+      - name: Login to GHCR
+        if: github.event.inputs.commit_sha == ''
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push Docker Image
+      - name: Build and Push
         if: github.event.inputs.commit_sha == ''
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: |
-            ${{ env.GHCR_IMAGE }}:${{ steps.vars.outputs.sha_short }}
-            ${{ env.GHCR_IMAGE }}:latest
-        
+          tags: ${{ env.GHCR_IMAGE }}:${{ steps.vars.outputs.sha_short }}
 
   deploy-staging:
     needs: build-and-push
     runs-on: ubuntu-latest
-    outputs:
-      image_tag: ${{ steps.vars.outputs.sha_short }}
     environment: staging
     steps:
-      - name: Configure AWS Credentials
+      - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.IAM_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-
-      - name: Deploy to Staging (Port 8080)
+      - name: Deploy
         run: |
-          aws ssm send-command \
-            --instance-ids "${{ env.EC2_INSTANCE_ID }}" \
-            --document-name "AWS-RunShellScript" \
-            --parameters 'commands=[
-              "docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}",
-              "docker stop gp-staging || true",
-              "docker rm gp-staging || true",
-              "docker pull ${{ env.GHCR_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}",
-              "docker run -d --name gp-staging -p 8080:8080 ${{ env.GHCR_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}"
-            ]'
+          aws ssm send-command --instance-ids "${{ env.EC2_INSTANCE_ID }}" \
+          --document-name "AWS-RunShellScript" \
+          --parameters 'commands=[
+            "docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}",
+            "docker stop gp-staging || true",
+            "docker rm gp-staging || true",
+            "docker pull ${{ env.GHCR_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}",
+            "docker run -d --name gp-staging -p 8080:8080 ${{ env.GHCR_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}"
+          ]'
 
   deploy-production:
     needs: [build-and-push, deploy-staging]
     runs-on: ubuntu-latest
-    environment: production  
+    environment: production
     steps:
-      - name: Configure AWS Credentials
+      - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.IAM_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-
-      - name: Deploy to Production (Port 80)
+      - name: Deploy
         run: |
-          aws ssm send-command \
-            --instance-ids "${{ env.EC2_INSTANCE_ID }}" \
-            --document-name "AWS-RunShellScript" \
-            --parameters 'commands=[
-              "docker stop gp-prod || true",
-              "docker rm gp-prod || true",
-              "docker pull ${{ env.GHCR_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}",
-              "docker run -d --name gp-prod -p 80:8080 ${{ env.GHCR_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}"
-            ]'
+          aws ssm send-command --instance-ids "${{ env.EC2_INSTANCE_ID }}" \
+          --document-name "AWS-RunShellScript" \
+          --parameters 'commands=[
+            "docker stop gp-prod || true",
+            "docker rm gp-prod || true",
+            "docker pull ${{ env.GHCR_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}",
+            "docker run -d --name gp-prod -p 80:8080 ${{ env.GHCR_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}"
+          ]'
