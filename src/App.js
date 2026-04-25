@@ -7,7 +7,7 @@ function App() {
   // Inline styling for the main container. 
   // In Phase 7, you will change the backgroundColor to 'red' to test a pipeline rollback!
   const containerStyle = {
-    backgroundColor: '#282c34', // <-- Change this to 'red' later!
+    backgroundColor: 'red', // Changed to red
     minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
