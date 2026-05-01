@@ -11,9 +11,10 @@ on:
 
 env:
   AWS_REGION: ${{secrets.AWS_REGION}}                
-  EC2_INSTANCE_ID:  ${{ secrets.EC2_INSTANCE_ID}}    
+  INSTANCE_ID_STAGING:  ${{ secrets.INSTANCE_ID_STAGING}}    
   IAM_ROLE_ARN:  ${{ secrets.IAM_ROLE_ARN}}       
   GHCR_IMAGE:  ${{ secrets.GHCR_IMAGE }} 
+  INSTANCE_ID_PROD: ${{ secrets.INSTANCE_ID_PROD}}  
 
 permissions:
   id-token: write
@@ -69,7 +70,7 @@ jobs:
       - name: Deploy to Staging (Port 8080)
         run: |
           aws ssm send-command \
-            --instance-ids "${{ env.EC2_INSTANCE_ID }}" \
+            --instance-ids "${{ env.INSTANCE_ID_STAGING }}" \
             --document-name "AWS-RunShellScript" \
             --parameters 'commands=[
               "sudo docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}",
@@ -77,7 +78,7 @@ jobs:
               "sudo docker stop gp-staging || true",
               "sudo docker rm gp-staging || true",
               "sudo docker pull ${{ env.GHCR_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}",
-              "sudo docker run -d --name gp-staging -p 8080:8080 ${{ env.GHCR_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}"
+              "sudo docker run -d --name gp-staging --network app-network --restart unless-stopped -p 80:80 -p 443:443 -v /etc/ssl/cloudflare:/etc/nginx/ssl ${{ env.GHCR_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}"
             ]'
 
   deploy-production:
@@ -93,12 +94,12 @@ jobs:
       - name: Deploy to Production (Port 80)
         run: |
           aws ssm send-command \
-            --instance-ids "${{ env.EC2_INSTANCE_ID }}" \
+            --instance-ids "${{ env.INSTANCE_ID_PROD}}" \
             --document-name "AWS-RunShellScript" \
             --parameters 'commands=[
               "sudo docker network create app-network || true",
               "sudo docker stop gp-prod || true",
               "sudo docker rm gp-prod || true",
               "sudo docker pull ${{ env.GHCR_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}",
-              "docker run -d --name gp-prod -p 80:8080 ${{ env.GHCR_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}"
+              "sudo docker run -d --name gp-prod --network app-network --restart unless-stopped -p 80:80 -p 443:443 -v /etc/ssl/cloudflare:/etc/nginx/ssl ${{ env.GHCR_IMAGE }}:${{ needs.build-and-push.outputs.image_tag }}"
             ]'
