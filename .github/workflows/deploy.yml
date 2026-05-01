@@ -12,7 +12,7 @@ on:
 env:
   AWS_REGION: ${{secrets.AWS_REGION}}                
   INSTANCE_ID_STAGING:  ${{ secrets.INSTANCE_ID_STAGING}}    
-  IAM_ROLE_ARN:  ${{ secrets.IAM_ROLE_ARN}}       
+  IAM_ROLE_ARN: "arn:aws:iam::361450366058:role/GitHubActionsDeployRole "     
   GHCR_IMAGE:  ${{ secrets.GHCR_IMAGE }} 
   INSTANCE_ID_PROD: ${{ secrets.INSTANCE_ID_PROD}}  
 
