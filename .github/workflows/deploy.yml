@@ -10,10 +10,10 @@ on:
         required: false
 
 env:
-  AWS_REGION: "ap-south-1"                   
-  EC2_INSTANCE_ID: "i-001c879e236af973e"     
-  IAM_ROLE_ARN: "arn:aws:iam::361450366058:role/GitHubActionsDeployRole"         
-  GHCR_IMAGE: ghcr.io/405found404/wellfound-gopratle
+  AWS_REGION: ${{secrets.AWS_REGION}}                
+  EC2_INSTANCE_ID:  ${{ secrets.EC2_INSTANCE_ID}}    
+  IAM_ROLE_ARN:  ${{ secrets.IAM_ROLE_ARN}}       
+  GHCR_IMAGE:  ${{ secrets.GHCR_IMAGE }} 
 
 permissions:
   id-token: write
