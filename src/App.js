@@ -1,5 +1,4 @@
 import React from 'react';
-
 function App() {
   // Hardcoded configuration details for this showcase project
   const apiUrl = "https://api.my-showcase-backend.com/data";
@@ -29,7 +28,7 @@ function App() {
 
   return (
     <div style={containerStyle}>
-      <h1>🚀 My AWS Deployment Pipeline</h1>
+      <h1>🚀 My AWS Deployment Pipeline  Success </h1>
       <p>This React application was automatically deployed using GitHub Actions and AWS SSM!</p>
       
       <div style={cardStyle}>
