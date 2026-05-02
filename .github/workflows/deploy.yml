@@ -10,11 +10,11 @@ on:
         required: false
 
 env:
-  AWS_REGION: ${{secrets.AWS_REGION}}                
-  INSTANCE_ID_STAGING:  ${{ secrets.INSTANCE_ID_STAGING}}    
-  IAM_ROLE_ARN:  ${{ secrets.IAM_ROLE_ARN}}       
+  AWS_REGION: ${{ secrets.AWS_REGION }}                
+  INSTANCE_ID_STAGING:  ${{ secrets.INSTANCE_ID_STAGING }}    
+  IAM_ROLE_ARN:   ${{ secrets.IAM_ROLE_ARN }}   
   GHCR_IMAGE:  ${{ secrets.GHCR_IMAGE }} 
-  INSTANCE_ID_PROD: ${{ secrets.INSTANCE_ID_PROD}}  
+  INSTANCE_ID_PROD: ${{ secrets.INSTANCE_ID_PROD }}  
 
 permissions:
   id-token: write
@@ -94,7 +94,7 @@ jobs:
       - name: Deploy to Production (Port 80)
         run: |
           aws ssm send-command \
-            --instance-ids "${{ env.INSTANCE_ID_PROD}}" \
+            --instance-ids "${{ env.INSTANCE_ID_PROD }}" \
             --document-name "AWS-RunShellScript" \
             --parameters 'commands=[
               "sudo docker network create app-network || true",
